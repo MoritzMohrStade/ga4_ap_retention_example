@@ -1,0 +1,28 @@
+config {
+    type: "incremental",
+    uniqueKey: ["user_pseudo_id"],
+    description: "All users",
+    bigquery:{
+        partitionBy: "user_first_touch_date"
+    },
+    assertions:{
+        uniqueKey: ["user_pseudo_id"],
+        nonNull: ["user_pseudo_id","user_first_touch_date"],
+        rowConditions: [
+            'user_first_touch_date >= "2010-01-01"'
+        ]
+    }
+}
+
+select 
+    date(timestamp_micros(user_first_touch_timestamp)) as user_first_touch_date
+    ,datetime(timestamp_micros(user_first_touch_timestamp)) as user_first_touch_datetime
+    ,user_pseudo_id
+    ,user_id
+    ,min_by(traffic_source,event_timestamp) as user_first_traffic_source
+from 
+    ${ref("events_*")}
+where
+    user_pseudo_id is not null
+    and user_first_touch_timestamp is not null
+group by all

@@ -1,0 +1,29 @@
+config {
+    type: "incremental",
+    uniqueKey: ["session_date","session_id"],
+    description: "All sessions",
+    bigquery:{
+        partitionBy: "session_date"
+    },
+    assertions:{
+        uniqueKey: ["session_date","session_id"],
+        nonNull: ["session_id","user_pseudo_id"]
+    }
+}
+
+select
+    fs.session_date
+    ,fs.session_id
+    ,fu.user_pseudo_id
+    ,fu.user_first_traffic_source
+    ,fu.user_first_touch_date
+    ,fu.user_first_touch_datetime
+    ,ds.session_touchpoints[safe_offset(0)] as session_first_touch_point
+from
+    ${ref("fct_session")} as fs
+left join ${ref("fct_users")} as fu
+    using(user_pseudo_id)
+left join ${ref("dim_session_traffic_source")} as ds
+    using(session_date,session_id)
+where   
+    fu.user_pseudo_id is not null

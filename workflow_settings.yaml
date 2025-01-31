@@ -1,0 +1,5 @@
+defaultProject: ga4-ap-retention-rate
+defaultLocation: US
+defaultDataset: dataform
+defaultAssertionDataset: dataform_assertions
+dataformCoreVersion: 3.0.0

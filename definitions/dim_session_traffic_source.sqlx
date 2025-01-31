@@ -1,0 +1,37 @@
+config {
+    type: "incremental",
+    uniqueKey: ["session_date","session_id"],
+    description: "All sessions",
+    bigquery:{
+        partitionBy: "session_date"
+    },
+    assertions:{
+        uniqueKey: ["session_date","session_id"],
+        nonNull: ["session_id"]
+    }
+}
+with traffic_source_events as (
+    select
+        parse_date('%Y%m%d',event_date) as session_date
+        ,concat((select value.int_value from unnest(event_params) where key = 'ga_session_id'),user_pseudo_id) as session_id
+        ,event_timestamp
+        ,(select value.string_value from unnest(event_params) where key = 'source') as event_source
+        ,(select value.string_value from unnest(event_params) where key = 'medium') as event_medium
+        ,(select value.string_value from unnest(event_params) where key = 'name') as event_campaign
+        ,(select value.string_value from unnest(event_params) where key = 'gclid') as event_gclid
+    from
+        ${ref("events_*")}
+    where
+        concat((select value.int_value from unnest(event_params) where key = 'ga_session_id'),user_pseudo_id) is not null
+    group by
+        all
+)
+
+select
+    session_date
+    ,session_id
+    ,array_agg(struct(event_timestamp,event_source,event_medium,event_campaign)ignore nulls order by event_timestamp) as session_touchpoints
+from
+    traffic_source_events
+group by 
+    all

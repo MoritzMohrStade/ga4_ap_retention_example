@@ -1,0 +1,22 @@
+config {
+    type: "incremental",
+    uniqueKey: ["session_date","session_id"],
+    description: "All sessions",
+    bigquery:{
+        partitionBy: "session_date"
+    },
+    assertions:{
+        uniqueKey: ["session_date","session_id"],
+        nonNull: ["session_id"]
+    }
+}
+
+select
+    parse_date('%Y%m%d',event_date) as session_date
+    ,datetime(timestamp_micros(user_first_touch_timestamp)) as user_first_touch_datetime
+    ,concat((select value.int_value from unnest(event_params) where key = 'ga_session_id'),user_pseudo_id) as session_id
+    ,user_pseudo_id
+    ,(select value.int_value from unnest(event_params) where key = 'ga_session_id') as ga_session_id
+from
+    ${ref("events_*")}
+group by all
